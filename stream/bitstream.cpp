@@ -101,6 +101,7 @@ TESTS
  - cd build && ctest
 */
 
+#ifndef prod
 
 #include <gtest/gtest.h>
 
@@ -131,14 +132,36 @@ TEST(BS, VerifyWriteReadBackBasicOps_2) {
     auto bitstream = std::make_unique<BitStream>();
     ASSERT_NE(bitstream, nullptr);
 
-    for (int i = 0; i < 500000; i++) {
+    for (int i = 0; i < 5000000; i++) {
         bitstream->WriteBits(16, 16);
     }
     bitstream->WriteBits(0, 1);
 
-    for (int i = 0; i < 500000; i++) {
+    for (int i = 0; i < 5000000; i++) {
         int readerInt = 0;
         bitstream->BitReader(readerInt, 16);
+        ASSERT_EQ(readerInt, 16);
+    }
+
+    int readerInt = 0;
+    bitstream->BitReader(readerInt, 1);
+    ASSERT_EQ(readerInt, 0);
+
+}
+
+TEST(BS, VerifyWriteReadBackBasicOps_3) {
+
+    auto bitstream = std::make_unique<BitStream>();
+    ASSERT_NE(bitstream, nullptr);
+
+    for (int i = 0; i < 5000000; i++) {
+        bitstream->WriteBits(16, 15);
+    }
+    bitstream->WriteBits(0, 1);
+
+    for (int i = 0; i < 5000000; i++) {
+        int readerInt = 0;
+        bitstream->BitReader(readerInt, 15);
         ASSERT_EQ(readerInt, 16);
     }
 
@@ -178,3 +201,4 @@ TEST(BS, VerifyWriteReadBoundryOps_1) {
 }
 
 
+#endif
