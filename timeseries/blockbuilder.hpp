@@ -1,6 +1,7 @@
 #ifndef BLOCK_BUILDER_HPP
 #define BLOCK_BUILDER_HPP
 
+#include <bitset>
 #include "../stream/bitstream.hpp"
 
 class BlockBuilder {
@@ -12,6 +13,7 @@ public:
 
     void WritePoint(int timestamp);
     std::vector<int> ReadBackPoints();
+    std::vector<std::bitset<64>> ReadBackBitstream();
     
 private:
 

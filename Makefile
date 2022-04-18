@@ -11,8 +11,11 @@ clean:
 	rm stream/*.gch
 	rm timeseries/*.gch
 
-tests: test1
+tests: test1 test2
 
 test1:
 	g++ $(CFLAGS) tests/bitstream_test.cpp $(ALL) -o test1.o && ./test1.o && rm test1.o
+
+test2:
+	g++ $(CFLAGS) tests/blockbuilder_test.cpp $(ALL) -o test1.o && ./test1.o && rm test1.o
 

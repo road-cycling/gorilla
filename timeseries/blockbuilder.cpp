@@ -1,6 +1,7 @@
 #include "blockbuilder.hpp"
 
 #include <iostream>
+#include <bitset>
 
 #define _0    0
 #define _01   1   // 10
@@ -168,4 +169,15 @@ void BitStream::WriteToFlipPotentialNegative(int &inputInt, int numberOfBits) {
         inputInt *= -1;
         inputInt |= (1<<(numberOfBits - 1));
     }
+}
+
+std::vector<std::bitset<64>> BlockBuilder::ReadBackBitstream() {
+
+    auto readout = std::vector<std::bitset<64>>();
+    for (auto bitstreamPack : *this->bitStream->byteStream) {
+        readout.push_back(std::bitset<64>(bitstreamPack));
+    }
+
+    return readout;
+
 }
