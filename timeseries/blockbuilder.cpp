@@ -58,9 +58,6 @@ std::vector<int> BlockBuilder::ReadBackPoints() {
     int lastTimestamp = this->blockStart;
     int trailingDelta = 0;
 
-    std::cout << lastTimestamp << std::endl;
-    std::cout << "TS ABOVE" << std::endl;
-
     int delta = 0;
     int firstBitFromStream = 0;
     for (int i = 0; i < this->pointsWritten; i++) {
