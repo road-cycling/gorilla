@@ -1,5 +1,6 @@
 #include "bitstream.hpp"
 
+#include <bitset>
 #include <iostream>
 
 
@@ -8,6 +9,13 @@ BitStream::BitStream(){
 }
 
 BitStream::~BitStream(){}
+
+void BitStream::print() {
+    for (int i = 0; i < this->byteStream->size(); i++) {
+        std::bitset<64> b(this->byteStream->at(i));
+        std::cout << b << std::endl;
+    }
+}
 
 void BitStream::bitWriter(uint_fast64_t writeInt, int numberOfBits) {
     this->byteStream->back() |= (writeInt << this->writeByteStreamStartingOffset);
@@ -66,7 +74,6 @@ void BitStream::bitReader(int &readInt, int numberOfBits) {
     readInt = extractor;
     this->readByteStreamBlockOffset += numberOfBits;
     if (this->readByteStreamBlockOffset == 64) {
-        std::cout << "Hit offset" << std::endl;
         this->readByteStreamBlockOffset = 0;
         this->readByteStreamVectorOffset += 1;
     }

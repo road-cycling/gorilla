@@ -8,9 +8,12 @@ class BitStream {
         BitStream();
         ~BitStream();
 
+        void print();
         void WriteBits(int writeInt, int numberOfBits);
 
         void BitReader(int &readInt, int numberOfBits);
+
+        static void WriteToFlipPotentialNegative(int &inputInt, int numberOfBits);
 
     private:
         void bitReader(int &readInt, int numberOfBits);
