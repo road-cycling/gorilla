@@ -11,6 +11,7 @@ public:
     BlockBuilder();
     ~BlockBuilder();
 
+    void WriteSeries(int timestamp, double dataValue);
     void WritePoint(int timestamp);
     void WriteDouble(double dataValue);
 
@@ -21,6 +22,10 @@ public:
 
     std::vector<int> ReadBackPoints();
     std::vector<std::bitset<64>> ReadBackBitstream();
+
+    int bitsAllocated() {
+        return this->bitStream->byteStream->size() * 64;
+    }
     
 private:
 

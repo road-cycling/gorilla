@@ -2,8 +2,15 @@
 #include "../timeseries/blockbuilder.hpp"
 
 void VerifyWriteOutAndReadBack();
+void VerifyWriteOutAndReadBackSeries();
 
 void ASSERT_EQ(int a, int b) {
+    if (a != b) {
+        exit(1);
+    }
+}
+
+void ASSERT_EQd(double a, double b) {
     if (a != b) {
         exit(1);
     }
@@ -17,6 +24,7 @@ void ASSERT_EQl(uint64_t a, uint64_t b) {
 
 int main() {
     VerifyWriteOutAndReadBack();
+    VerifyWriteOutAndReadBackSeries();
 }
 
 void VerifyWriteOutAndReadBack() {
@@ -70,4 +78,43 @@ void VerifyWriteOutAndReadBack() {
     );
 
     std::cout << __func__ << " DONE" << std::endl;
+}
+
+void VerifyWriteOutAndReadBackSeries() {
+
+    auto blockBuilder = std::make_unique<BlockBuilder>();
+    auto writePoints = std::vector<std::pair<int, double>>{
+        { 1647835200, 15.5 },
+        { 1647835260, 17.5 },
+        { 1647835320, 15.5 },
+        { 1647835380, 5.5 },
+        { 1647835440, 2.55 },
+        { 1647835500, 1.25 },
+        { 1647835560, 4 },
+        { 1647835620, 4 },
+        { 1647835680, 4 },
+        { 1647835745, 0 },
+        { 1647835800, 0 },
+        { 1647835859, 0 }
+    };
+
+    for (auto &point: writePoints) {
+        blockBuilder->WriteSeries(std::get<0>(point), std::get<1>(point));
+    }
+
+    const auto readOutSeries = blockBuilder->ReadOutData();
+
+    ASSERT_EQ(writePoints.size(), readOutSeries.size());
+
+    for (int i = 0; i < writePoints.size(); i++) {
+        ASSERT_EQ(std::get<0>(writePoints.at(i)), std::get<0>(readOutSeries.at(i)));
+        ASSERT_EQd(std::get<1>(writePoints.at(i)), std::get<1>(readOutSeries.at(i)));
+    }
+
+    int timestampBits = sizeof(int) * 8 * writePoints.size();
+    int doubleBits = sizeof(double) * 8 * writePoints.size();
+    std::cout << "Uncompressed Data Size of  " << timestampBits + doubleBits << " bits." << std::endl;
+    std::cout << "Compressed Data Size of  " << blockBuilder->bitsAllocated() << " bits." << std::endl;
+    std::cout << __func__ << " DONE" << std::endl;
+
 }

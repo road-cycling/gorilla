@@ -13,10 +13,15 @@ BlockBuilder::BlockBuilder(){}
 BlockBuilder::~BlockBuilder(){}
 void BlockBuilder::Serialize(){}
 
+void BlockBuilder::WriteSeries(int timestamp, double dataValue) {
+    this->WritePoint(timestamp);
+    this->WriteDouble(dataValue);
+}
+
 std::vector<std::pair<int, double>> BlockBuilder::ReadOutData() {
 
     std::vector<std::pair<int, double>> decompressedData{};
-    decompressedData.resize(this->pointsWritten);
+    decompressedData.reserve(this->pointsWritten);
 
     for (int i = 0; i < this->pointsWritten; i++) {
         decompressedData.emplace_back(this->ReadPoint(), this->ReadDouble());
