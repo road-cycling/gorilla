@@ -13,7 +13,18 @@ BlockBuilder::BlockBuilder(){}
 BlockBuilder::~BlockBuilder(){}
 void BlockBuilder::Serialize(){}
 
+std::vector<std::pair<int, double>> BlockBuilder::ReadOutData() {
 
+    std::vector<std::pair<int, double>> decompressedData{};
+    decompressedData.resize(this->pointsWritten);
+
+    for (int i = 0; i < this->pointsWritten; i++) {
+        decompressedData.emplace_back(this->ReadPoint(), this->ReadDouble());
+    }
+
+    return decompressedData;
+
+}
 
 double BlockBuilder::ReadDouble() {
 
@@ -24,10 +35,10 @@ double BlockBuilder::ReadDouble() {
         #endif
 
         this->firstDoubleRead = true;
-
         uint64_t readOutFirstValueU64 = 0;
-        double readOutFirstValue = 0;
+        
         this->bitStream->BitReader64(readOutFirstValueU64, 64);
+        double readOutFirstValue = 0; 
 
         std::memcpy(&readOutFirstValue, &readOutFirstValueU64, 8);
         this->lastDoubleRead = readOutFirstValueU64;
@@ -66,6 +77,10 @@ double BlockBuilder::ReadDouble() {
         readOutXOR ^= this->lastDoubleRead;
         this->lastDoubleRead = readOutXOR;
 
+        #ifdef DEBUG
+            std::cout << "Control bit='0' Read out XOR =" << readOutXOR  << std::endl;
+        #endif
+
         double readBackDouble0 = 0;
         std::memcpy(&readBackDouble0, &readOutXOR, 8);
         return readBackDouble0;
@@ -95,13 +110,15 @@ double BlockBuilder::ReadDouble() {
         meaningfulXORdValue ^= this->lastDoubleRead;
         this->lastDoubleRead = meaningfulXORdValue;
 
+        #ifdef DEBUG
+            std::cout << "Control bit='1' Leading 0=" << leadingZeroes << " Len XOR=" << lengthMeaningfulXORedValue << " Meaningful XOR=" << meaningfulXORdValue << std::endl;
+        #endif
+
+
         double readBackDouble = 0;
         std::memcpy(&readBackDouble, &this->lastDoubleRead, 8);
         return readBackDouble;
     }
-
-
-
 
     return 0.;
 
@@ -188,8 +205,6 @@ void BlockBuilder::WriteDouble(double dataValue) {
 
     }
    
-
-
 }
 
 void BlockBuilder::WritePoint(int timestamp) {
@@ -231,112 +246,113 @@ void BlockBuilder::WritePoint(int timestamp) {
 
 }
 
+int BlockBuilder::ReadPoint() {
+
+    int delta = 0;
+    if ( this->timestampHasBeenReadFirstTime == false ) {
+        this->timestampHasBeenReadFirstTime = true;
+        this->lastReadTimestamp = this->blockStart;
+    }
+
+    int firstBitFromStream = 0;
+    this->bitStream->BitReader(firstBitFromStream, 1);
+
+    // (b) If D is zero, then store a single ‘0’ bit
+    if ( firstBitFromStream == 0 ) {
+        #ifdef DEBUG
+                std::cout << "1Δ=0" << std::endl;
+        #endif
+        this->lastReadTimestamp += this->trailingDelta;
+        return this->lastReadTimestamp;
+    }
+
+    firstBitFromStream = 0;
+    this->bitStream->BitReader(firstBitFromStream, 1);
+
+    // If D is between [-63, 64], store ‘10’ 
+    // followed by the value (7 bits)
+    // (previous was 1 now a 0)
+    if ( firstBitFromStream == 0 ) {
+        
+        this->bitStream->BitReader(delta, 7);
+
+        if (delta > 64) {
+            delta ^= (1 << 6);
+            delta *= -1;
+        }
+
+        #ifdef DEBUG
+            std::cout << "2Δ=" << delta << std::endl;
+        #endif
+
+        this->lastReadTimestamp += (delta + this->trailingDelta);
+        this->trailingDelta += delta;
+        
+        return this->lastReadTimestamp;
+
+    }
+
+    firstBitFromStream = 0;
+    this->bitStream->BitReader(firstBitFromStream, 1);
+
+    // If D is between [-255, 256], store 
+    // ‘110’ followed by the value (9 bits)
+    if (firstBitFromStream == 0) {
+        
+        this->bitStream->BitReader(delta, 9);
+
+        if (delta > 256) {
+            delta ^= (1 << 8);
+            delta *= -1;
+        }
+
+        #ifdef DEBUG
+            std::cout << "3Δ=" << delta << std::endl;
+        #endif
+
+        this->lastReadTimestamp += (delta + this->trailingDelta);
+        this->trailingDelta += delta;
+        return this->lastReadTimestamp;
+    }
+
+    // if D is between [-2047, 2048], store ‘1110’ 
+    // followed by the value (12 bits)
+    if (firstBitFromStream == 0) {
+        this->bitStream->BitReader(delta, 12);
+
+        if (delta > 2048) {
+            delta ^= (1 << 11);
+            delta *= -1;
+        }
+
+        #ifdef DEBUG
+            std::cout << "4Δ=" << delta << std::endl;
+        #endif
+
+        this->lastReadTimestamp += (delta + this->trailingDelta);
+        this->trailingDelta += delta;
+        return this->lastReadTimestamp;
+    }
+
+    // Otherwise store ‘1111’ followed by D using 32 bits
+    this->bitStream->BitReader(delta, 32);
+
+    #ifdef DEBUG
+        std::cout << "4Δ=" << delta << std::endl;   
+    #endif
+
+    this->lastReadTimestamp += (delta + this->trailingDelta);
+    this->trailingDelta += delta;
+
+    return this->lastReadTimestamp;
+}
+
 std::vector<int> BlockBuilder::ReadBackPoints() {
 
     std::vector<int> decompressedTimeSeries;
 
-    int lastTimestamp = this->blockStart;
-    int trailingDelta = 0;
-
-    int delta = 0;
-    int firstBitFromStream = 0;
     for (int i = 0; i < this->pointsWritten; i++) {
-
-        delta = 0;
-        firstBitFromStream = 0;
-        this->bitStream->BitReader(firstBitFromStream, 1);
-
-        // 0
-        if (firstBitFromStream == 0) {
-            #ifdef DEBUG
-                std::cout << "1Δ=0" << std::endl;
-            #endif
-
-            lastTimestamp = lastTimestamp + trailingDelta;
-            decompressedTimeSeries.push_back(lastTimestamp);
-
-            continue;
-        }
-
-        firstBitFromStream = 0;
-        this->bitStream->BitReader(firstBitFromStream, 1);
-
-        // 1 0 = cap = 64
-        if (firstBitFromStream == 0) {
-            this->bitStream->BitReader(delta, 7);
-
-            if (delta > 64) {
-                delta ^= (1 << 6);
-                delta *= -1;
-            }
-
-            #ifdef DEBUG
-                std::cout << "2Δ=" << delta << std::endl;
-            #endif
-
-            lastTimestamp += (delta + trailingDelta);
-            trailingDelta += delta;
-            decompressedTimeSeries.push_back(lastTimestamp);
-
-            continue;
-        }
-
-        firstBitFromStream = 0;
-        this->bitStream->BitReader(firstBitFromStream, 1);
-
-        // 1 1 0 = cap = 256
-        if (firstBitFromStream == 0) {
-            this->bitStream->BitReader(delta, 9);
-
-            if (delta > 256) {
-                delta ^= (1 << 8);
-                delta *= -1;
-            }
-
-            #ifdef DEBUG
-                std::cout << "3Δ=" << delta << std::endl;
-            #endif
-
-            lastTimestamp += (delta + trailingDelta);
-            trailingDelta += delta;
-            decompressedTimeSeries.push_back(lastTimestamp);
-
-            continue;
-        }
-
-        firstBitFromStream = 0;
-        this->bitStream->BitReader(firstBitFromStream, 1);
-
-        // 1 1 1 0 = cap = 2048
-        if (firstBitFromStream == 0) {
-            this->bitStream->BitReader(delta, 12);
-
-            if (delta > 2048) {
-                delta ^= (1 << 11);
-                delta *= -1;
-            }
-
-            #ifdef DEBUG
-                std::cout << "4Δ=" << delta << std::endl;
-            #endif
-
-            lastTimestamp += (delta + trailingDelta);
-            trailingDelta += delta;
-            decompressedTimeSeries.push_back(lastTimestamp);
-
-            continue;
-        }
-
-        this->bitStream->BitReader(delta, 32);
-
-        #ifdef DEBUG
-            std::cout << "4Δ=" << delta << std::endl;   
-        #endif
-
-        lastTimestamp += (delta + trailingDelta);
-        trailingDelta += delta;
-        decompressedTimeSeries.push_back(lastTimestamp);
-
+        decompressedTimeSeries.push_back(this->ReadPoint());
     }
 
     return decompressedTimeSeries;

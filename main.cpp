@@ -8,27 +8,79 @@
 int main() {
     
     auto foo = new BlockBuilder();
-    foo->WriteDouble(12);
-    foo->WriteDouble(13);
-    foo->WriteDouble(14);
-    foo->WriteDouble(15);
-    foo->WriteDouble(16);
+
+    auto writePoints = std::vector<int>{
+        1647835200,
+        1647835260,
+        1647835320,
+        1647835380,
+        1647835440,
+        1647835500,
+        1647835560,
+        1647835620,
+        1647835680,
+        1647835745,
+        1647835800,
+        1647835859
+    };
+
+    for (auto &ap : writePoints) {
+        foo->WritePoint(ap);
+    }
 
 
-    auto readPoint = foo->ReadDouble();
-    std::cout << readPoint << std::endl;
+    for (auto &ap : writePoints) {
+        std::cout << foo->ReadPoint() << std::endl;
+    }
 
-    readPoint = foo->ReadDouble();
-    std::cout << readPoint << std::endl;
+    // auto foo = new BlockBuilder();
+    // foo->WriteDouble(12);
+    // foo->WriteDouble(24);
+    // foo->WriteDouble(15);
+    // foo->WriteDouble(12);
+    // foo->WriteDouble(35);
 
-    readPoint = foo->ReadDouble();
-    std::cout << readPoint << std::endl;
+    // foo->WriteDouble(15.5);
+    // foo->WriteDouble(14.0625);
+    // foo->WriteDouble(3.25);
+    // foo->WriteDouble(8.625);
+    // foo->WriteDouble(13.1);
+    // foo->WriteDouble(987654321.12345);
 
-    readPoint = foo->ReadDouble();
-    std::cout << readPoint << std::endl;
 
-    readPoint = foo->ReadDouble();
-    std::cout << readPoint << std::endl;
+
+    // auto readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
+
+    // readPoint = foo->ReadDouble();
+    // std::cout << readPoint << std::endl;
 
     // double value_float = 15.5;
 
