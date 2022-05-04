@@ -12,6 +12,10 @@ public:
     ~BlockBuilder();
 
     void WritePoint(int timestamp);
+
+    void WriteDouble(double dataValue);
+    double ReadDouble();
+
     std::vector<int> ReadBackPoints();
     std::vector<std::bitset<64>> ReadBackBitstream();
     
@@ -28,6 +32,25 @@ private:
     uint64_t blockStart{0};
     int previousTimestamp{-1};
     int pointsWritten{0};
+
+    /*
+        Writing Doubles Start
+    */
+    bool doubleHasBeenWritten{false};
+    uint64_t previousDoubleWritten{0};
+
+    int previouslyWrittenTrailingZeroes{-1};
+    int previouslyWrittenLeadingZeroes{-1};
+    /*
+        Writing Doubles End
+    */
+
+    /* Reading Doubles Start */
+    bool firstDoubleRead{false};
+    uint64_t lastDoubleRead{0};
+    int lastReadTrailingZeroes{-1};
+    int lastReadLeadingZeroes{-1};
+    /* Reading Doubles End */
 };
 
 #endif

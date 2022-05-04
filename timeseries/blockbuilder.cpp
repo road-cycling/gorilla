@@ -13,6 +13,185 @@ BlockBuilder::BlockBuilder(){}
 BlockBuilder::~BlockBuilder(){}
 void BlockBuilder::Serialize(){}
 
+
+
+double BlockBuilder::ReadDouble() {
+
+    if ( this->firstDoubleRead == false ) {
+
+        #ifdef DEBUG
+            std::cout << "Reading First Double From Stream" << std::endl;
+        #endif
+
+        this->firstDoubleRead = true;
+
+        uint64_t readOutFirstValueU64 = 0;
+        double readOutFirstValue = 0;
+        this->bitStream->BitReader64(readOutFirstValueU64, 64);
+
+        std::memcpy(&readOutFirstValue, &readOutFirstValueU64, 8);
+        this->lastDoubleRead = readOutFirstValueU64;
+
+        return readOutFirstValue;
+    }
+
+    int encodedBit = 0;
+    this->bitStream->BitReader(encodedBit, 1);
+
+    // XOR with the previous is 0. Last value read out can be returned
+    if ( encodedBit == 0 ) {
+
+        #ifdef DEBUG
+            std::cout << "Last value stored is same as next ~" << std::endl;
+        #endif
+
+        double readOutFirstValue = 0;
+        std::memcpy(&readOutFirstValue, &this->lastDoubleRead, 8);
+        return readOutFirstValue;
+    }
+
+    int controlBit = 0;
+    this->bitStream->BitReader(controlBit, 1);
+
+    // Control Bit '0'
+    if ( controlBit == 0 ) {
+
+        // If the block of meaningful bits falls within the
+        // block of previous meaningful bits
+        int bitsToRead = 64 - this->lastReadTrailingZeroes - this->lastReadLeadingZeroes;
+        uint64_t readOutXOR = 0;
+        this->bitStream->BitReader64(readOutXOR, bitsToRead);
+        readOutXOR <<= this->lastReadTrailingZeroes;
+
+        readOutXOR ^= this->lastDoubleRead;
+        this->lastDoubleRead = readOutXOR;
+
+        double readBackDouble0 = 0;
+        std::memcpy(&readBackDouble0, &readOutXOR, 8);
+        return readBackDouble0;
+    }
+
+
+    // Control Bit '1'
+    else if ( controlBit == 1 ) {
+        int leadingZeroes = 0;
+        int lengthMeaningfulXORedValue = 0;
+        uint64_t meaningfulXORdValue = 0;
+
+        // leading zeroes in the next 5 bits
+        this->bitStream->BitReader(leadingZeroes, 5);
+
+        // length of XORed value in next 6 bits
+        this->bitStream->BitReader(lengthMeaningfulXORedValue, 6);
+
+        // meaningful bits of the XORed value
+        this->bitStream->BitReader64(meaningfulXORdValue, lengthMeaningfulXORedValue);
+
+        this->lastReadLeadingZeroes = leadingZeroes;
+        this->lastReadTrailingZeroes = 64 - leadingZeroes - lengthMeaningfulXORedValue;
+
+        meaningfulXORdValue <<= this->lastReadTrailingZeroes;
+
+        meaningfulXORdValue ^= this->lastDoubleRead;
+        this->lastDoubleRead = meaningfulXORdValue;
+
+        double readBackDouble = 0;
+        std::memcpy(&readBackDouble, &this->lastDoubleRead, 8);
+        return readBackDouble;
+    }
+
+
+
+
+    return 0.;
+
+}
+
+void BlockBuilder::WriteDouble(double dataValue) {
+
+    uint64_t dataValueAsInt = 0;
+    std::memcpy(&dataValueAsInt, &dataValue, 8);
+
+    uint64_t dataValueToWriteToStream = 0;
+
+    if ( this->doubleHasBeenWritten == false ) {
+        this->doubleHasBeenWritten = true;
+        dataValueToWriteToStream = dataValueAsInt;
+        previousDoubleWritten = dataValueToWriteToStream;
+
+        // 1. The first value is stored with no compression.
+        return this->bitStream->WriteBits(dataValueToWriteToStream, 64);
+
+    } else {
+        dataValueToWriteToStream = dataValueAsInt ^ this->previousDoubleWritten;
+        this->previousDoubleWritten = dataValueAsInt;
+    }
+
+#ifdef DEBUG
+    std::cout << "Writing: " << std::hex << dataValueToWriteToStream << std::endl;
+#endif
+
+    // 2. if XOR with the previous is zero (same value)
+    // store a single 0 bit
+    if (dataValueToWriteToStream == 0) {
+        return this->bitStream->WriteBits(0, 1);
+    }
+
+    int leadingZeroes = std::countl_zero(dataValueToWriteToStream);
+    int trailingZeroes = std::countr_zero(dataValueToWriteToStream);
+
+#ifdef DEBUG
+    std::cout << "Leading Z: " << leadingZeroes << std::endl;
+    std::cout << "Trailing Z: " << trailingZeroes << std::endl;
+    std::cout << std::endl;
+#endif
+
+    // 3. When XOR is non=zero, calculate the number of leading and trailing zeroes
+    // in the XOR.
+
+    // Store bit '1'
+    this->bitStream->WriteBits(1, 1);
+
+    // Followed by either
+    if (leadingZeroes == this->previouslyWrittenLeadingZeroes && trailingZeroes == this->previouslyWrittenTrailingZeroes) {
+        // a) (Control bit '0') If the block of meaningful bits falls within the block of previous meaningful bits
+        this->bitStream->WriteBits(0, 1);
+        int lengthMeaningfulXOR = 64 - leadingZeroes - trailingZeroes;
+        // Right align.
+        dataValueToWriteToStream >>= trailingZeroes;
+        this->bitStream->WriteBits(dataValueToWriteToStream, lengthMeaningfulXOR);
+    } else {
+
+        // b) (Control bit '1')
+        //       - Store the length of the number of leading zeroes in the next 5 bits
+        //       - Store the length of the meaningful XORed value in the next 6 bits
+        //       - Store the meaningful bits of the XORed value
+        
+        // (1) Control Bit
+        this->bitStream->WriteBits(1, 1);
+
+        // (5) Length of the number of leading zeroes
+        this->bitStream->WriteBits(leadingZeroes, 5);
+
+        // (6) Length of the meaningful XORed value
+        int lengthMeaningfulXOR = 64 - leadingZeroes - trailingZeroes;
+        this->bitStream->WriteBits(lengthMeaningfulXOR, 6);
+
+        // Store the meaningful bits of the XORed value
+
+        // Right align.
+        dataValueToWriteToStream >>= trailingZeroes;
+        this->bitStream->WriteBits(dataValueToWriteToStream, lengthMeaningfulXOR);
+
+        this->previouslyWrittenTrailingZeroes = trailingZeroes;
+        this->previouslyWrittenLeadingZeroes = leadingZeroes;
+
+    }
+   
+
+
+}
+
 void BlockBuilder::WritePoint(int timestamp) {
 
     if (this->previousTimestamp == -1) {

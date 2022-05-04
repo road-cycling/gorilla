@@ -1,5 +1,5 @@
 
-CFLAGS = -std=c++14
+CFLAGS = -std=c++20
 ALL = timeseries/blockbuilder.cpp stream/bitstream.cpp
 
 

@@ -9,13 +9,18 @@ class BitStream {
         ~BitStream();
 
         void print();
+        
         void WriteBits(int writeInt, int numberOfBits);
+        void WriteBits(uint64_t writeInt, int numberOfBits);
 
         void BitReader(int &readInt, int numberOfBits);
+        void BitReader64(uint64_t &readInt, int numberOfBits);
+
 
         static void WriteToFlipPotentialNegative(int &inputInt, int numberOfBits);
 
     private:
+        void bitReader64(uint64_t &readInt, int numberOfBits);
         void bitReader(int &readInt, int numberOfBits);
         void bitWriter(uint_fast64_t writeInt, int numberOfBits);
 
