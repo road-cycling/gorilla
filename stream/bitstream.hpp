@@ -19,6 +19,9 @@ class BitStream {
 
         static void WriteToFlipPotentialNegative(int &inputInt, int numberOfBits);
 
+        void Serialize(std::ostream &writer);
+        void Deserialize(std::istream &reader);
+
     private:
         void bitReader64(uint64_t &readInt, int numberOfBits);
         void bitReader(int &readInt, int numberOfBits);

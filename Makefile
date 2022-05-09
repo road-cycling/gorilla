@@ -1,6 +1,6 @@
 
 CFLAGS = -std=c++20
-ALL = timeseries/blockbuilder.cpp stream/bitstream.cpp
+ALL = stream/blockbuilder.cpp stream/bitstream.cpp
 
 
 all: main.cpp $(ALL)
