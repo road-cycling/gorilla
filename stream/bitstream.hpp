@@ -22,6 +22,13 @@ class BitStream {
         void Serialize(std::ostream &writer);
         void Deserialize(std::istream &reader);
 
+        void Serialize(char *&writer);
+        void Deserialize(char *&reader);
+
+        int SizeInBytes() {
+            return this->byteStream->size() * sizeof(uint_fast64_t);
+        }
+
     private:
         void bitReader64(uint64_t &readInt, int numberOfBits);
         void bitReader(int &readInt, int numberOfBits);

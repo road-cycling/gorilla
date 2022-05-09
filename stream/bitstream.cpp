@@ -4,8 +4,7 @@
 #include "bitstream.hpp"
 
 template<typename POD>
-std::ostream& serialize(std::ostream& os, std::vector<POD> const& v)
-{
+std::ostream& serialize(std::ostream& os, std::vector<POD> const& v) {
     // this only works on built in data types (PODs)
     static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
                   "Can only serialize POD types with this function");
@@ -17,8 +16,7 @@ std::ostream& serialize(std::ostream& os, std::vector<POD> const& v)
 }
 
 template<typename POD>
-std::istream& deserialize(std::istream& is, std::vector<POD>& v)
-{
+std::istream& deserialize(std::istream& is, std::vector<POD>& v) {
     static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
                   "Can only deserialize POD types with this function");
 
@@ -27,6 +25,21 @@ std::istream& deserialize(std::istream& is, std::vector<POD>& v)
     v.resize(size);
     is.read(reinterpret_cast<char*>(v.data()), v.size() * sizeof(POD));
     return is;
+}
+
+template<typename POD>
+void deserialize(char *&reader, std::vector<POD>& v) {
+    static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
+                  "Can only deserialize POD types with this function");
+
+    decltype(v.size()) size;
+    std::memcpy(&size, reader, sizeof(size));
+    reader += sizeof(size);
+
+    v.resize(size);
+    std::memcpy(v.data(), reader, v.size() * sizeof(POD));
+    reader += v.size() * sizeof(POD);
+
 }
 
 BitStream::BitStream(){
@@ -208,7 +221,22 @@ void BitStream::Serialize(std::ostream &writer) {
     serialize(writer, *this->byteStream);
 }
 
+void BitStream::Serialize(char *&writer) {
+
+    uint_fast64_t size = this->byteStream->size();
+
+    std::memcpy(writer, &size, sizeof(size));
+    writer += sizeof(size);
+
+    std::memcpy(writer, this->byteStream->data(), size * sizeof(uint_fast64_t));
+    writer += (size * sizeof(uint_fast64_t));
+}
+
 void BitStream::Deserialize(std::istream &reader) {
+    deserialize(reader, *this->byteStream);
+}
+
+void BitStream::Deserialize(char *&reader) {
     deserialize(reader, *this->byteStream);
 }
 

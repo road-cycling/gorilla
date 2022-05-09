@@ -5,7 +5,8 @@
 
 void VerifyWriteOutAndReadBack();
 void VerifyWriteOutAndReadBackSeries();
-void VerifyWriteDownSerDes();
+void VerifyWriteDownSerDesStream();
+void VerifyWriteDownSerDesHeap();
 
 void ASSERT_EQ(int a, int b) {
     if (a != b) {
@@ -51,7 +52,9 @@ void ASSERT_EQl(std::string s, uint64_t a, uint64_t b) {
 int main() {
     VerifyWriteOutAndReadBack();
     VerifyWriteOutAndReadBackSeries();
-    VerifyWriteDownSerDes();
+    VerifyWriteDownSerDesStream();
+    VerifyWriteDownSerDesHeap();
+
 }
 
 void VerifyWriteOutAndReadBack() {
@@ -148,7 +151,7 @@ void VerifyWriteOutAndReadBackSeries() {
 
 }
 
-void VerifyWriteDownSerDes() {
+void VerifyWriteDownSerDesStream() {
 
     auto blockBuilderTest = std::make_unique<BlockBuilder>(555);
 
@@ -186,4 +189,42 @@ void VerifyWriteDownSerDes() {
         ASSERT_EQ(std::get<0>(deserializedBlock.at(i)), std::get<0>(preSerializedBlock.at(i)));
         ASSERT_EQd(std::get<1>(deserializedBlock.at(i)), std::get<1>(preSerializedBlock.at(i)));
     }
+
+    std::cout << __func__ << " DONE" << std::endl;
+}
+
+void VerifyWriteDownSerDesHeap() {
+
+    auto blockBuilderTest = std::make_unique<BlockBuilder>(555);
+
+    std::vector<std::pair<int, double>> writtenSeries;
+
+
+    int i = 0;
+    while (blockBuilderTest->WriteSeries(1647835200 + (1 + i) * 60, 5 * i)) {
+        writtenSeries.emplace_back(1647835200 + (1 + i) * 60, 5 * i);
+        i++;
+    }
+
+    char *buffer = (char *) std::malloc(blockBuilderTest->SizeInBytes());
+    char *bufferRef = buffer;
+    char *bufferRefFree = buffer;
+    blockBuilderTest->Serialize(buffer);
+
+    auto deserializedBlock = BlockBuilder::Deserialize(bufferRef)->ReadOutData();
+    std::free(bufferRefFree);
+
+    auto preSerializedBlock = blockBuilderTest->ReadOutData();
+
+    for (int i = 0; i < writtenSeries.size(); i++) {
+
+        ASSERT_EQ(std::get<0>(deserializedBlock.at(i)), std::get<0>(writtenSeries.at(i)));
+        ASSERT_EQd(std::get<1>(deserializedBlock.at(i)), std::get<1>(writtenSeries.at(i)));
+
+        ASSERT_EQ(std::get<0>(deserializedBlock.at(i)), std::get<0>(preSerializedBlock.at(i)));
+        ASSERT_EQd(std::get<1>(deserializedBlock.at(i)), std::get<1>(preSerializedBlock.at(i)));
+    }
+
+    std::cout << __func__ << " DONE" << std::endl;
+
 }

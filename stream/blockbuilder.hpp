@@ -36,6 +36,16 @@ public:
     void Serialize(std::ostream &writer);
     static std::unique_ptr<BlockBuilder> Deserialize(std::istream &writer);
 
+    void Serialize(char *&writer);
+    static std::unique_ptr<BlockBuilder> Deserialize(char *&reader);
+
+    int SizeInBytes() {
+        return sizeof(this->_metric_id) + \
+            sizeof(this->blockStart) + \
+            sizeof(this->pointsWritten) + \
+            this->bitStream->SizeInBytes();
+
+    }
 
 public:
 

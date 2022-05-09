@@ -33,6 +33,38 @@ void BlockBuilder::Serialize(std::ostream &writer){
     this->bitStream->Serialize(writer);
 }
 
+void BlockBuilder::Serialize(char *&writer) {
+
+    std::memcpy(writer, &this->_metric_id, sizeof(this->_metric_id));
+    writer += sizeof(this->_metric_id);
+
+    std::memcpy(writer, &this->blockStart, sizeof(this->blockStart));
+    writer += sizeof(this->blockStart);
+
+    std::memcpy(writer, &this->pointsWritten, sizeof(this->pointsWritten));
+    writer += sizeof(this->pointsWritten);
+
+    this->bitStream->Serialize(writer);
+}
+
+std::unique_ptr<BlockBuilder> BlockBuilder::Deserialize(char *&reader) {
+
+    auto seriesBlock = std::make_unique<BlockBuilder>();
+
+    std::memcpy(&seriesBlock->_metric_id, reader, sizeof(seriesBlock->_metric_id));
+    reader += sizeof(seriesBlock->_metric_id);
+
+    std::memcpy(&seriesBlock->blockStart, reader, sizeof(seriesBlock->blockStart));
+    reader += sizeof(seriesBlock->blockStart);
+
+    std::memcpy(&seriesBlock->pointsWritten, reader, sizeof(seriesBlock->pointsWritten));
+    reader += sizeof(seriesBlock->pointsWritten);
+
+    seriesBlock->bitStream->Deserialize(reader);
+
+    return std::move(seriesBlock);
+}
+
 
 std::unique_ptr<BlockBuilder> BlockBuilder::Deserialize(std::istream &reader) {
 
