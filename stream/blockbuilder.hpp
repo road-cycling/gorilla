@@ -33,6 +33,8 @@ public:
         return this->bitStream->byteStream->size() * 64;
     }
 
+    void ResetReadOffsets();
+
     void Serialize(std::ostream &writer);
     static std::unique_ptr<BlockBuilder> Deserialize(std::istream &writer);
 

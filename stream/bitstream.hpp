@@ -29,6 +29,11 @@ class BitStream {
             return this->byteStream->size() * sizeof(uint_fast64_t);
         }
 
+        void resetReadOffsets() {
+            this->readByteStreamBlockOffset = 0;
+            this->readByteStreamVectorOffset = 0;
+        }
+
     private:
         void bitReader64(uint64_t &readInt, int numberOfBits);
         void bitReader(int &readInt, int numberOfBits);

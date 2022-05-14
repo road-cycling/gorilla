@@ -90,6 +90,23 @@ std::unique_ptr<BlockBuilder> BlockBuilder::Deserialize(std::istream &reader) {
     return seriesBlock;
 }
 
+void BlockBuilder::ResetReadOffsets() {
+
+    // rest stored bitstream offsets
+    this->bitStream->resetReadOffsets();
+
+    // TS values
+    this->timestampHasBeenReadFirstTime = false;
+    this->lastReadTimestamp = 0;
+    this->trailingDelta = 0;
+
+    // DV Values
+    this->firstDoubleRead = false;
+    this->lastDoubleRead = 0;
+    this->lastReadTrailingZeroes = -1;
+    this->lastReadLeadingZeroes = -1;
+}
+
 bool BlockBuilder::WriteSeries(int timestamp, double dataValue) {
     if (!this->WritePoint(timestamp)) {
         return false;
