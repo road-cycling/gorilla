@@ -141,7 +141,7 @@ double BlockBuilder::ReadDouble() {
         this->firstDoubleRead = true;
         uint64_t readOutFirstValueU64 = 0;
         
-        this->bitStream->BitReader64(readOutFirstValueU64, 64);
+        this->bitStream->BitReader64Wrapper(readOutFirstValueU64, 64);
         double readOutFirstValue = 0; 
 
         std::memcpy(&readOutFirstValue, &readOutFirstValueU64, 8);
@@ -151,7 +151,7 @@ double BlockBuilder::ReadDouble() {
     }
 
     int encodedBit = 0;
-    this->bitStream->BitReader(encodedBit, 1);
+    this->bitStream->BitReaderWrapper(encodedBit, 1);
 
     // XOR with the previous is 0. Last value read out can be returned
     if ( encodedBit == 0 ) {
@@ -166,7 +166,7 @@ double BlockBuilder::ReadDouble() {
     }
 
     int controlBit = 0;
-    this->bitStream->BitReader(controlBit, 1);
+    this->bitStream->BitReaderWrapper(controlBit, 1);
 
     // Control Bit '0'
     if ( controlBit == 0 ) {
@@ -175,7 +175,7 @@ double BlockBuilder::ReadDouble() {
         // block of previous meaningful bits
         int bitsToRead = 64 - this->lastReadTrailingZeroes - this->lastReadLeadingZeroes;
         uint64_t readOutXOR = 0;
-        this->bitStream->BitReader64(readOutXOR, bitsToRead);
+        this->bitStream->BitReader64Wrapper(readOutXOR, bitsToRead);
         readOutXOR <<= this->lastReadTrailingZeroes;
 
         readOutXOR ^= this->lastDoubleRead;
@@ -198,13 +198,13 @@ double BlockBuilder::ReadDouble() {
         uint64_t meaningfulXORdValue = 0;
 
         // leading zeroes in the next 5 bits
-        this->bitStream->BitReader(leadingZeroes, 5);
+        this->bitStream->BitReaderWrapper(leadingZeroes, 5);
 
         // length of XORed value in next 6 bits
-        this->bitStream->BitReader(lengthMeaningfulXORedValue, 6);
+        this->bitStream->BitReaderWrapper(lengthMeaningfulXORedValue, 6);
 
         // meaningful bits of the XORed value
-        this->bitStream->BitReader64(meaningfulXORdValue, lengthMeaningfulXORedValue);
+        this->bitStream->BitReader64Wrapper(meaningfulXORdValue, lengthMeaningfulXORedValue);
 
         this->lastReadLeadingZeroes = leadingZeroes;
         this->lastReadTrailingZeroes = 64 - leadingZeroes - lengthMeaningfulXORedValue;
@@ -365,7 +365,7 @@ int BlockBuilder::ReadPoint() {
     }
 
     int firstBitFromStream = 0;
-    this->bitStream->BitReader(firstBitFromStream, 1);
+    this->bitStream->BitReaderWrapper(firstBitFromStream, 1);
 
     // (b) If D is zero, then store a single ‘0’ bit
     if ( firstBitFromStream == 0 ) {
@@ -377,14 +377,14 @@ int BlockBuilder::ReadPoint() {
     }
 
     firstBitFromStream = 0;
-    this->bitStream->BitReader(firstBitFromStream, 1);
+    this->bitStream->BitReaderWrapper(firstBitFromStream, 1);
 
     // If D is between [-63, 64], store ‘10’ 
     // followed by the value (7 bits)
     // (previous was 1 now a 0)
     if ( firstBitFromStream == 0 ) {
         
-        this->bitStream->BitReader(delta, 7);
+        this->bitStream->BitReaderWrapper(delta, 7);
 
         if (delta > 64) {
             delta ^= (1 << 6);
@@ -403,13 +403,13 @@ int BlockBuilder::ReadPoint() {
     }
 
     firstBitFromStream = 0;
-    this->bitStream->BitReader(firstBitFromStream, 1);
+    this->bitStream->BitReaderWrapper(firstBitFromStream, 1);
 
     // If D is between [-255, 256], store 
     // ‘110’ followed by the value (9 bits)
     if (firstBitFromStream == 0) {
         
-        this->bitStream->BitReader(delta, 9);
+        this->bitStream->BitReaderWrapper(delta, 9);
 
         if (delta > 256) {
             delta ^= (1 << 8);
@@ -428,7 +428,7 @@ int BlockBuilder::ReadPoint() {
     // if D is between [-2047, 2048], store ‘1110’ 
     // followed by the value (12 bits)
     if (firstBitFromStream == 0) {
-        this->bitStream->BitReader(delta, 12);
+        this->bitStream->BitReaderWrapper(delta, 12);
 
         if (delta > 2048) {
             delta ^= (1 << 11);
@@ -445,7 +445,7 @@ int BlockBuilder::ReadPoint() {
     }
 
     // Otherwise store ‘1111’ followed by D using 32 bits
-    this->bitStream->BitReader(delta, 32);
+    this->bitStream->BitReaderWrapper(delta, 32);
 
     #ifdef DEBUG
         std::cout << "4Δ=" << delta << std::endl;   

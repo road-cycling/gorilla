@@ -13,8 +13,11 @@ class BitStream {
         void WriteBits(int writeInt, int numberOfBits);
         void WriteBits(uint64_t writeInt, int numberOfBits);
 
-        void BitReader(int &readInt, int numberOfBits);
-        void BitReader64(uint64_t &readInt, int numberOfBits);
+        void BitReaderWrapper(int &readInt, int numberOfBits);
+        void BitReader64Wrapper(uint64_t &readInt, int numberOfBits);
+
+        void BitReader(int &readInt, int numberOfBits, int &blockOffset, int &vectorOffset);
+        void BitReader64(uint64_t &readInt, int numberOfBits, int &blockOffset, int &vectorOffset);
 
 
         static void WriteToFlipPotentialNegative(int &inputInt, int numberOfBits);
@@ -35,8 +38,9 @@ class BitStream {
         }
 
     private:
-        void bitReader64(uint64_t &readInt, int numberOfBits);
-        void bitReader(int &readInt, int numberOfBits);
+        void bitReader64(uint64_t &readInt, int numberOfBits, int &blockOffset, int &vectorOffset);
+        void bitReader(int &readInt, int numberOfBits, int &blockOffset, int &vectorOffset);
+
         void bitWriter(uint_fast64_t writeInt, int numberOfBits);
 
     public:

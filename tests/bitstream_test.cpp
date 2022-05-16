@@ -31,12 +31,12 @@ void VerifyWriteReadBackBasicOps_1() {
 
     for (int i = 0; i < 50000; i++) {
         int readerInt = 0;
-        bitstream->BitReader(readerInt, 1);
+        bitstream->BitReaderWrapper(readerInt, 1);
         ASSERT_EQ(readerInt, 1);
     }
 
     int readerInt = 0;
-    bitstream->BitReader(readerInt, 1);
+    bitstream->BitReaderWrapper(readerInt, 1);
     ASSERT_EQ(readerInt, 0);
 }
 
@@ -51,12 +51,12 @@ void VerifyWriteReadBackBasicOps_2() {
 
     for (int i = 0; i < 5000000; i++) {
         int readerInt = 0;
-        bitstream->BitReader(readerInt, 16);
+        bitstream->BitReaderWrapper(readerInt, 16);
         ASSERT_EQ(readerInt, 16);
     }
 
     int readerInt = 0;
-    bitstream->BitReader(readerInt, 1);
+    bitstream->BitReaderWrapper(readerInt, 1);
     ASSERT_EQ(readerInt, 0);
 }
 
@@ -71,12 +71,12 @@ void VerifyWriteReadBackBasicOps_3() {
 
     for (int i = 0; i < 5000000; i++) {
         int readerInt = 0;
-        bitstream->BitReader(readerInt, 15);
+        bitstream->BitReaderWrapper(readerInt, 15);
         ASSERT_EQ(readerInt, 16);
     }
 
     int readerInt = 0;
-    bitstream->BitReader(readerInt, 1);
+    bitstream->BitReaderWrapper(readerInt, 1);
     ASSERT_EQ(readerInt, 0);
 
 }
@@ -101,7 +101,7 @@ void VerifyWriteReadBoundryOps_1() {
 
     for (auto expected : bQExpected) {
         int readerInt = 0;
-        bitstream->BitReader(readerInt, std::get<0>(expected));
+        bitstream->BitReaderWrapper(readerInt, std::get<0>(expected));
         ASSERT_EQ(readerInt, std::get<1>(expected));
     }
 }

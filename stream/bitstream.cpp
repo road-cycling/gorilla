@@ -48,6 +48,15 @@ BitStream::BitStream(){
 
 BitStream::~BitStream(){}
 
+
+void BitStream::BitReaderWrapper(int &readInt, int numberOfBits) {
+    return this->BitReader(readInt, numberOfBits, this->readByteStreamBlockOffset, this->readByteStreamVectorOffset);
+}
+
+void BitStream::BitReader64Wrapper(uint64_t &readInt, int numberOfBits) {
+    return this->BitReader64(readInt, numberOfBits, this->readByteStreamBlockOffset, this->readByteStreamVectorOffset);
+}
+
 void BitStream::print() {
     for (int i = 0; i < this->byteStream->size(); i++) {
         std::bitset<64> b(this->byteStream->at(i));
@@ -137,80 +146,80 @@ void BitStream::WriteBits(int writeInt, int numberOfBits) {
     
 }
 
-void BitStream::bitReader(int &readInt, int numberOfBits) {
+void BitStream::bitReader(int &readInt, int numberOfBits, int &blockOffset, int &vectorOffset) {
 
     int bitsOnStreamBlock = sizeof(uint_fast64_t) * 8;
 
     uint_fast64_t extractor = 0;
-    extractor |= this->byteStream->at(this->readByteStreamVectorOffset);
+    extractor |= this->byteStream->at(vectorOffset);
 
-    extractor <<= (bitsOnStreamBlock - (this->readByteStreamBlockOffset + numberOfBits));
+    extractor <<= (bitsOnStreamBlock - (blockOffset + numberOfBits));
     extractor >>= (bitsOnStreamBlock - numberOfBits);
 
 
     readInt = extractor;
-    this->readByteStreamBlockOffset += numberOfBits;
-    if (this->readByteStreamBlockOffset == 64) {
-        this->readByteStreamBlockOffset = 0;
-        this->readByteStreamVectorOffset += 1;
+    blockOffset += numberOfBits;
+    if (blockOffset == 64) {
+        blockOffset = 0;
+        vectorOffset += 1;
     }
 }
 
-void BitStream::bitReader64( uint64_t &readInt, int numberOfBits) {
+void BitStream::bitReader64(uint64_t &readInt, int numberOfBits, int &blockOffset, int &vectorOffset) {
 
     int bitsOnStreamBlock = sizeof(uint_fast64_t) * 8;
 
     uint_fast64_t extractor = 0;
-    extractor |= this->byteStream->at(this->readByteStreamVectorOffset);
+    extractor |= this->byteStream->at(vectorOffset);
 
-    extractor <<= (bitsOnStreamBlock - (this->readByteStreamBlockOffset + numberOfBits));
+    extractor <<= (bitsOnStreamBlock - (blockOffset + numberOfBits));
     extractor >>= (bitsOnStreamBlock - numberOfBits);
 
 
     readInt = extractor;
-    this->readByteStreamBlockOffset += numberOfBits;
-    if (this->readByteStreamBlockOffset == 64) {
-        this->readByteStreamBlockOffset = 0;
-        this->readByteStreamVectorOffset += 1;
+    blockOffset += numberOfBits;
+    if (blockOffset == 64) {
+        blockOffset = 0;
+        vectorOffset += 1;
     }
 }
 
-void BitStream::BitReader(int &readInt, int numberOfBits) {
+void BitStream::BitReader(int &readInt, int numberOfBits, int &blockOffset, int &vectorOffset) {
 
     int bitsOnStreamBlock = sizeof(uint_fast64_t) * 8;
-    int bitsAvailableFromCurrentStream = bitsOnStreamBlock - this->readByteStreamBlockOffset;
+    int bitsAvailableFromCurrentStream = bitsOnStreamBlock - blockOffset;
 
     if (bitsAvailableFromCurrentStream >= numberOfBits) {
-        return this->bitReader(readInt, numberOfBits);
+        return this->bitReader(readInt, numberOfBits, blockOffset, vectorOffset);
     }
 
     int numberOfBitsFirstRead = bitsAvailableFromCurrentStream;
     int numberOfBitsSecondRead = numberOfBits - numberOfBitsFirstRead;
 
     int firstReadInt = 0;
-    this->bitReader(firstReadInt, numberOfBitsFirstRead);
-    this->bitReader(readInt, numberOfBitsSecondRead);
+    this->bitReader(firstReadInt, numberOfBitsFirstRead, blockOffset, vectorOffset);
+    this->bitReader(readInt, numberOfBitsSecondRead, blockOffset, vectorOffset);
 
     readInt <<= numberOfBitsFirstRead;
     readInt |= firstReadInt;
     return;
 }
 
-void BitStream::BitReader64(uint64_t &readInt, int numberOfBits) {
+void BitStream::BitReader64(uint64_t &readInt, int numberOfBits, int &blockOffset, int &vectorOffset) {
 
     int bitsOnStreamBlock = sizeof(uint_fast64_t) * 8;
-    int bitsAvailableFromCurrentStream = bitsOnStreamBlock - this->readByteStreamBlockOffset;
+    int bitsAvailableFromCurrentStream = bitsOnStreamBlock - blockOffset;
 
     if (bitsAvailableFromCurrentStream >= numberOfBits) {
-        return this->bitReader64(readInt, numberOfBits);
+        return this->bitReader64(readInt, numberOfBits, blockOffset, vectorOffset);
     }
 
     int numberOfBitsFirstRead = bitsAvailableFromCurrentStream;
     int numberOfBitsSecondRead = numberOfBits - numberOfBitsFirstRead;
 
     uint64_t firstReadInt = 0;
-    this->bitReader64(firstReadInt, numberOfBitsFirstRead);
-    this->bitReader64(readInt, numberOfBitsSecondRead);
+    this->bitReader64(firstReadInt, numberOfBitsFirstRead, blockOffset, vectorOffset);
+    this->bitReader64(readInt, numberOfBitsSecondRead, blockOffset, vectorOffset);
 
     readInt <<= numberOfBitsFirstRead;
     readInt |= firstReadInt;
